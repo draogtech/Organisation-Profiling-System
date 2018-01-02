@@ -26,9 +26,8 @@ class SignUp(Model):
     first_name = TextField(100)
     last_name = TextField(100)
     email = TextField(100)
-    confirm_email = TextField(100)
-    password = CharField(20)
-    confirm_password = CharField(20)
+    confirm_email = TextField(100, default='No')
+    password = CharField(100)
     timestamp = DateTimeField(default=datetime.now)
 
 
