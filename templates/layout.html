@@ -11,8 +11,8 @@
 </head>
 <body>
     {% include 'includes/navbar.html' %}
-    <div class="container">
-        {% extends 'layout.html' %}
+    <div>
+        {% include 'includes/_messages.html' %}
         {% block body %} {% endblock %}
     </div>
 
