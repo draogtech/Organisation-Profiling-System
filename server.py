@@ -55,19 +55,24 @@ def index():
 def register():
     form = SignupForm(request.form)
     if request.method == 'POST' and form.validate():
-        user = SignUp(first_name=form.first_name.data, last_name=form.last_name.data, email=form.email.data,
-                      password=sha256_crypt.encrypt(str(form.password.data)))
-        user.save()
-        email = str(form.email.data)
-        token = s.dumps(email, salt='confirm-email')
+        user = SignUp.select().where(SignUp.email == str(form.email.data))
+        if user.execute() == 0:
+            user = SignUp(first_name=form.first_name.data, last_name=form.last_name.data, email=form.email.data,
+                          password=sha256_crypt.encrypt(str(form.password.data)))
+            user.save()
+            email = str(form.email.data)
+            token = s.dumps(email, salt='confirm-email')
 
-        msg = Message('Confirm Email', sender='draogtech@gmail.com', recipients=[email])
-        link = url_for('confirm_email', token=token, _external=True)
-        msg.body = 'Please click on the link or copy paste on your browser to activate account {}'.format(link)
-        mail.send(msg)
+            msg = Message('Confirm Email', sender='draogtech@gmail.com', recipients=[email])
+            link = url_for('confirm_email', token=token, _external=True)
+            msg.body = 'Please click on the link or copy paste on your browser to activate account {}'.format(link)
+            mail.send(msg)
 
-        flash('You have successfully signed up. To activate account, please click on link sent to registered email',
-              'success')
+            flash('You have successfully signed up. To activate account, please click on link sent to registered email',
+                  'success')
+        else:
+            flash('User already exists, kindly check signup credentials or change password below!', 'warning')
+
         return redirect(url_for('register'))
 
     return render_template('register.html', form=form)
@@ -79,8 +84,27 @@ def confirm_email(token):
         email = s.loads(token, salt='confirm-email', max_age=3600)
     except SignatureExpired:
         return 'Signature is expired'
-    user = SignUp.update(confirm_email='Yes').where(SignUp.email == 'draogtech@gmail.com')
+    user = SignUp.update(confirm_email='Yes').where(SignUp.email == email)
     user.execute()
     flash('Your account has been activated, you can sign-in now!',
           'success')
     return redirect(url_for('register'))
+
+
+@app.route("/#signin", methods=['GET', 'POST'])
+def sign_in_page():
+    error = None
+    if request.method == 'POST':
+        user = SignUp.select().where(SignUp.email == request.form['email'] and
+                                     SignUp.password == sha256_crypt.encrypt(str(request.form['password'])))
+        if user.execute == 1:
+            session['email'] = request.form['email']
+            return redirect(url_for('dashboard.html'))
+
+    return 'Invalid credentials'
+
+
+@app.route("/dashboard")
+def user_dashboard():
+    pass
+    return render_template('dashboard.html')
